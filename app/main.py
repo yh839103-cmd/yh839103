@@ -47,6 +47,7 @@ def health():
 def callback():
     signature = request.headers.get("X-Line-Signature", "")
     body = request.get_data(as_text=True)
+    log.info("收到 LINE webhook（%d bytes）", len(body))
     try:
         handler.handle(body, signature)
     except InvalidSignatureError:
@@ -74,13 +75,17 @@ def _process(user_id: str, chat_id: str | None, reply_token: str, text: str) -> 
     except Exception:  # noqa: BLE001
         log.debug("無法顯示讀取動畫", exc_info=True)
     try:
-        _reply(reply_token, chat.handle(user_id, text))
+        answer = chat.handle(user_id, text)
+        log.info("AI 回覆完成，共 %d 則", len(answer))
+        _reply(reply_token, answer)
+        log.info("已回覆 LINE")
     except Exception:  # noqa: BLE001
         log.exception("回覆訊息失敗")
 
 
 @handler.add(MessageEvent, message=TextMessageContent)
 def on_text(event: MessageEvent):
+    log.info("收到文字訊息")
     src = event.source
     user_id = getattr(src, "user_id", None) or "anonymous"
     # 群組 / 聊天室用群組 ID 作為對話記憶的 key，讓大家共享上下文

@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -w 1 --threads 8 -b 0.0.0.0:$PORT app.main:app
+    startCommand: gunicorn -w 1 --threads 8 --access-logfile - -b 0.0.0.0:$PORT app.main:app
     healthCheckPath: /
     envVars:
       - key: LINE_CHANNEL_SECRET

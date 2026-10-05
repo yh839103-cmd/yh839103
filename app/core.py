@@ -4,6 +4,7 @@
 """
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from collections import deque
@@ -119,6 +120,7 @@ class ChatService:
         try:
             answer = self.llm(self.store.history(user_id))
         except Exception:  # noqa: BLE001 — 任何 AI 錯誤都不該讓 webhook 失敗
+            logging.getLogger("line-ai-bot").exception("呼叫 AI 失敗")
             # 移除這次的提問，避免留下沒有回覆的 user 訊息
             h = self.store.history(user_id)
             self.store.reset(user_id)
