@@ -24,8 +24,8 @@ from app.llm import GeminiLLM
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 log = logging.getLogger("line-ai-bot")
 
-configuration = Configuration(access_token=os.environ["LINE_CHANNEL_ACCESS_TOKEN"])
-handler = WebhookHandler(os.environ["LINE_CHANNEL_SECRET"])
+configuration = Configuration(access_token=os.environ["LINE_CHANNEL_ACCESS_TOKEN"].strip())
+handler = WebhookHandler(os.environ["LINE_CHANNEL_SECRET"].strip())
 
 chat = ChatService(
     llm=GeminiLLM(),

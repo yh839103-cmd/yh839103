@@ -20,7 +20,7 @@ class GeminiLLM:
     def __init__(self, api_key: str | None = None, model: str | None = None,
                  system_prompt: str | None = None, max_tokens: int = 1024,
                  timeout: int = 50):
-        self.api_key = api_key or os.environ["GEMINI_API_KEY"]
+        self.api_key = (api_key or os.environ["GEMINI_API_KEY"]).strip()
         # gemini-flash-latest 會自動指向 Google 最新的 Flash 模型
         self.model = model or os.getenv("GEMINI_MODEL", "gemini-flash-latest")
         self.system_prompt = system_prompt or os.getenv(
