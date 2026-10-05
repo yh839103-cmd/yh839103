@@ -14,7 +14,9 @@ def test_build_body_maps_roles():
         {"role": "user", "content": "hi"},
         {"role": "assistant", "content": "hello"},
     ])
-    assert body["system_instruction"]["parts"][0]["text"] == "sys"
+    sys_text = body["system_instruction"]["parts"][0]["text"]
+    assert sys_text.startswith("sys") and "現在時間（台灣）" in sys_text
+    assert body["generationConfig"]["temperature"] == 0.4
     assert [c["role"] for c in body["contents"]] == ["user", "model"]
     assert body["contents"][1]["parts"][0]["text"] == "hello"
 

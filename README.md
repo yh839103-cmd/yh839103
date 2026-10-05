@@ -77,6 +77,7 @@ docker run --env-file .env -p 8000:8000 line-ai-bot
 | `GEMINI_MODEL` | | 預設 `gemini-flash-latest`（自動使用最新 Flash 模型） |
 | `GEMINI_FALLBACK_MODEL` | | 主模型忙線（503）時改用，預設 `gemini-3.5-flash-lite` |
 | `SYSTEM_PROMPT` | | 自訂 AI 角色設定 |
+| `GEMINI_TEMPERATURE` | | 0～2，越低回答越穩定，預設 0.4 |
 | `MAX_TURNS` | | 記憶輪數，預設 10 |
 | `SESSION_TTL` | | 記憶保留秒數，預設 3600 |
 
@@ -102,4 +103,5 @@ pytest -q
 | 收到「本帳號無法個別回覆用戶的訊息」 | 同一頁把 **自動回應訊息** 關閉 |
 | Verify 出現 400 Bad Request | `LINE_CHANNEL_SECRET` 填錯（貼反、多了字）。到 LINE Basic settings 重新複製，貼到 Render → Environment |
 | Bot 回「請稍後再試」 | 到 Render → Logs 搜尋「Gemini」：503 是 Google 忙線（程式會自動重試並改用備用模型）、400/403 是金鑰錯誤、429 是超過免費額度 |
+| 回答不正確或像在亂掰 | Gemini 免費方案無法上網查詢，即時資訊（新聞、天氣、價格）可能過時；可調低 `GEMINI_TEMPERATURE` 或在 `SYSTEM_PROMPT` 寫清楚 Bot 的專長範圍 |
 | 很久沒用後第一則訊息很慢 | Render 免費方案閒置會休眠，第一則約需 1 分鐘喚醒 |
