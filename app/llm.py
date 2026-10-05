@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import json
 import os
+import urllib.error
 import urllib.request
 
 DEFAULT_SYSTEM_PROMPT = (
@@ -55,5 +56,9 @@ class GeminiLLM:
                      "x-goog-api-key": self.api_key},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
-            return self.parse(json.load(resp))
+        try:
+            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+                return self.parse(json.load(resp))
+        except urllib.error.HTTPError as e:
+            detail = e.read().decode("utf-8", "replace")[:1000]
+            raise RuntimeError(f"Gemini API 錯誤 {e.code}：{detail}") from None
