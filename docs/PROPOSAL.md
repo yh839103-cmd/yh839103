@@ -37,17 +37,17 @@
 你（手機 LINE）⇄ LINE ──轉交──▶ 我們的程式（放在 Render 上）
                   ▲                    │
                   │                    ├─▶ 對話記憶（最近 10 輪）
-                  └──答案傳回給你───────┴─▶ Claude AI（想出答案）
+                  └──答案傳回給你───────┴─▶ Gemini AI（想出答案）
 ```
 
-你傳的訊息會先到 LINE，LINE 轉交給我們放在 Render 上的程式；程式拿去問 Claude（AI），再把答案透過 LINE 傳回你的手機。整個過程通常只要幾秒。
+你傳的訊息會先到 LINE，LINE 轉交給我們放在 Render 上的程式；程式拿去問 Gemini（Google 的 AI），再把答案透過 LINE 傳回你的手機。整個過程通常只要幾秒。
 
 會用到 4 個服務，都可以免費註冊：
 
 | 服務 | 想成是 | 在這個專案做什麼 |
 |---|---|---|
 | [LINE Developers](https://developers.line.biz/console/) | Bot 的身分證 | 建立 LINE 官方帳號，拿到讓程式控制它的金鑰 |
-| [Anthropic Console](https://console.anthropic.com/) | Bot 的大腦 | 提供 Claude AI，負責想答案 |
+| [Google AI Studio](https://aistudio.google.com/apikey) | Bot 的大腦 | 提供 Gemini AI，負責想答案（免費） |
 | [GitHub](https://github.com/) | 放程式的雲端硬碟 | 保存程式碼與這份計畫書 |
 | [Render](https://render.com/) | 24 小時開著的電腦 | 執行程式，隨時等 LINE 傳訊息過來 |
 
@@ -56,7 +56,7 @@
 程式已經寫好了，今天只要照順序做完這 6 步，大約 2～3 小時。
 
 - [ ] 第 1 步：申請 LINE 官方帳號，拿到 Channel secret 和 Channel access token 兩組金鑰
-- [ ] 第 2 步：申請 Claude 的 API 金鑰（第 3 組金鑰）
+- [ ] 第 2 步：在 Google AI Studio 申請免費的 Gemini 金鑰（第 3 組金鑰）
 - [ ] 第 3 步：把程式放上 GitHub
 - [ ] 第 4 步：在 Render 把程式架起來，填入 3 組金鑰
 - [ ] 第 5 步：把 Render 的網址填回 LINE，讓兩邊接起來
@@ -64,14 +64,14 @@
 
 ## 要花多少錢？
 
-幾乎不用錢：只有 AI 依使用量收費，個人聊天用量一個月通常很少。
+完全免費：4 個服務都用免費方案，不用綁信用卡。
 
 | 項目 | 費用 |
 |---|---|
 | LINE 官方帳號 | 免費；Bot 回覆你的訊息不算在每月免費則數裡 |
 | GitHub | 免費 |
 | Render 免費方案 | 免費；太久沒人用會「睡著」，叫醒它的第一則訊息會慢約一分鐘 |
-| Claude AI | 依用量收費，可以在 Anthropic Console 設定每月花費上限 |
+| Gemini AI | 免費；有每分鐘、每天的次數上限，超過時 Bot 會請你稍後再試 |
 
 價格以各平台官網為準，可能會調整。
 
@@ -82,7 +82,7 @@
 | 可能發生的事 | 怎麼處理 |
 |---|---|
 | 金鑰被別人看到 | 只填在 Render 的設定裡，不要貼到網路上；不小心外洩就到官網重新產生一組 |
-| AI 費用花太多 | 在 Anthropic Console 設定每月花費上限 |
+| 用太多次超過免費額度 | Bot 會回「請稍後再試」，等一下就恢復；個人使用通常夠用 |
 | 重新啟動後忘記對話 | 第一版先接受，之後可改成存進資料庫 |
 | 群組內每則訊息都回覆太吵 | 之後可以改成「被 @ 才回覆」 |
 | AI 回答錯誤 | AI 可能會說錯，重要的事請自己再查證 |

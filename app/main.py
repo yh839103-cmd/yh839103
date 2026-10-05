@@ -19,7 +19,7 @@ from linebot.v3.messaging import (
 from linebot.v3.webhooks import FollowEvent, MessageEvent, TextMessageContent
 
 from app.core import HELP_TEXT, ChatService, ConversationStore
-from app.llm import ClaudeLLM
+from app.llm import GeminiLLM
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
 log = logging.getLogger("line-ai-bot")
@@ -28,7 +28,7 @@ configuration = Configuration(access_token=os.environ["LINE_CHANNEL_ACCESS_TOKEN
 handler = WebhookHandler(os.environ["LINE_CHANNEL_SECRET"])
 
 chat = ChatService(
-    llm=ClaudeLLM(),
+    llm=GeminiLLM(),
     store=ConversationStore(
         max_turns=int(os.getenv("MAX_TURNS", "10")),
         ttl_seconds=int(os.getenv("SESSION_TTL", "3600")),

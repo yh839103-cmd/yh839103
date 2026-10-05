@@ -1,12 +1,12 @@
 # LINE AI 聊天助理 🤖
 
-用 Python + Flask 打造、串接 Anthropic Claude 的 LINE 聊天機器人。支援多輪對話記憶、指令、長訊息自動切段。
+用 Python + Flask 打造、串接 Google Gemini（免費方案）的 LINE 聊天機器人。支援多輪對話記憶、指令、長訊息自動切段。
 
 📄 計畫書：[docs/PROPOSAL.md](docs/PROPOSAL.md)
 
 ## 功能
 
-- 💬 AI 對話：傳任何文字訊息，Claude 會回覆
+- 💬 AI 對話：傳任何文字訊息，Gemini 會回覆
 - 🧠 對話記憶：記得最近 10 輪對話（閒置 1 小時自動清除）
 - ⌨️ 指令：`/help` 說明、`/reset` 清除記憶
 - 👋 加好友時自動送出歡迎說明
@@ -19,7 +19,7 @@
 app/
   main.py   # Flask Webhook 伺服器、LINE 事件處理
   core.py   # 對話記憶、指令、訊息切段（純 Python，可單元測試）
-  llm.py    # Claude API 串接
+  llm.py    # Gemini API 串接（只用內建 urllib）
 tests/      # 單元測試
 docs/       # 計畫書
 ```
@@ -31,7 +31,7 @@ docs/       # 計畫書
 1. 到 [LINE Developers Console](https://developers.line.biz/console/) 建立 **Messaging API** Channel，取得：
    - `Channel secret`（Basic settings 頁）
    - `Channel access token`（Messaging API 頁，按 Issue）
-2. 到 [Anthropic Console](https://console.anthropic.com/) 建立 API Key。
+2. 到 [Google AI Studio](https://aistudio.google.com/apikey) 建立免費的 Gemini API Key（不用綁信用卡）。
 
 ### 2. 本機執行
 
@@ -57,7 +57,7 @@ ngrok http 8000
 ### 4. 部署到雲端（Render）
 
 1. 在 [Render](https://render.com/) 選 **New → Blueprint**，連結這個 GitHub repo（會讀取 `render.yaml`）。
-2. 填入 `LINE_CHANNEL_SECRET`、`LINE_CHANNEL_ACCESS_TOKEN`、`ANTHROPIC_API_KEY`。
+2. 填入 `LINE_CHANNEL_SECRET`、`LINE_CHANNEL_ACCESS_TOKEN`、`GEMINI_API_KEY`。
 3. 部署完成後，把 `https://<你的服務>.onrender.com/callback` 填回 LINE Webhook URL。
 
 也可以用 Docker：
@@ -73,8 +73,8 @@ docker run --env-file .env -p 8000:8000 line-ai-bot
 |---|---|---|
 | `LINE_CHANNEL_SECRET` | ✅ | LINE Channel secret |
 | `LINE_CHANNEL_ACCESS_TOKEN` | ✅ | LINE Channel access token |
-| `ANTHROPIC_API_KEY` | ✅ | Anthropic API Key |
-| `CLAUDE_MODEL` | | 預設 `claude-sonnet-5-5` |
+| `GEMINI_API_KEY` | ✅ | Google AI Studio 的 API Key |
+| `GEMINI_MODEL` | | 預設 `gemini-flash-latest`（自動使用最新 Flash 模型） |
 | `SYSTEM_PROMPT` | | 自訂 AI 角色設定 |
 | `MAX_TURNS` | | 記憶輪數，預設 10 |
 | `SESSION_TTL` | | 記憶保留秒數，預設 3600 |
@@ -91,3 +91,4 @@ pytest -q
 
 - 對話記憶存在伺服器記憶體中，重啟後會清空；因此 gunicorn 只用 1 個 worker（多執行緒）。
 - 請勿把 `.env` 上傳到 GitHub。
+- Gemini 免費方案有每分鐘／每天的次數限制，超過時 Bot 會回「請稍後再試」；實際額度可在 Google AI Studio 查看。

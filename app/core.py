@@ -60,7 +60,7 @@ class ConversationStore:
             h.append({"role": role, "content": content})
             while len(h) > self.max_turns * 2:
                 h.popleft()
-            # Claude API 要求第一則必須是 user
+            # AI API 要求第一則必須是 user
             while h and h[0]["role"] != "user":
                 h.popleft()
 
