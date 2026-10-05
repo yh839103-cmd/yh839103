@@ -16,4 +16,4 @@ services:
       - key: GEMINI_MODEL
         value: gemini-flash-latest
       - key: GEMINI_FALLBACK_MODEL
-        value: gemini-3.5-flash-lite
+        value: gemini-3.7-flash,gemini-3.5-flash-lite

@@ -12,6 +12,8 @@
 - 👋 加好友時自動送出歡迎說明
 - ✂️ 超過 LINE 5000 字上限時自動切段
 - ⏳ AI 思考時顯示「輸入中」動畫
+- 🔎 會自己查資料：中文維基百科（知識）、Open-Meteo（天氣），免費且不需金鑰
+- 🔁 Google 忙線時自動重試，並依序改用其他免費模型
 
 ## 專案結構
 
@@ -19,7 +21,8 @@
 app/
   main.py   # Flask Webhook 伺服器、LINE 事件處理
   core.py   # 對話記憶、指令、訊息切段（純 Python，可單元測試）
-  llm.py    # Gemini API 串接（只用內建 urllib）
+  llm.py    # Gemini API 串接（只用內建 urllib），含重試與工具呼叫
+  tools.py  # AI 可呼叫的免費查詢工具：維基百科、天氣
 tests/      # 單元測試
 docs/       # 計畫書
 ```
@@ -75,7 +78,8 @@ docker run --env-file .env -p 8000:8000 line-ai-bot
 | `LINE_CHANNEL_ACCESS_TOKEN` | ✅ | LINE Channel access token |
 | `GEMINI_API_KEY` | ✅ | Google AI Studio 的 API Key |
 | `GEMINI_MODEL` | | 預設 `gemini-flash-latest`（自動使用最新 Flash 模型） |
-| `GEMINI_FALLBACK_MODEL` | | 主模型忙線（503）時改用，預設 `gemini-3.5-flash-lite` |
+| `GEMINI_FALLBACK_MODEL` | | 主模型忙線時依序改用（逗號分隔），預設 `gemini-3.7-flash,gemini-3.5-flash-lite` |
+| `ENABLE_TOOLS` | | 設成 `false` 可關閉查資料功能，預設開啟 |
 | `SYSTEM_PROMPT` | | 自訂 AI 角色設定 |
 | `GEMINI_TEMPERATURE` | | 0～2，越低回答越穩定，預設 0.4 |
 | `MAX_TURNS` | | 記憶輪數，預設 10 |
