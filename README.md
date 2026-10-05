@@ -75,6 +75,7 @@ docker run --env-file .env -p 8000:8000 line-ai-bot
 | `LINE_CHANNEL_ACCESS_TOKEN` | ✅ | LINE Channel access token |
 | `GEMINI_API_KEY` | ✅ | Google AI Studio 的 API Key |
 | `GEMINI_MODEL` | | 預設 `gemini-flash-latest`（自動使用最新 Flash 模型） |
+| `GEMINI_FALLBACK_MODEL` | | 主模型忙線（503）時改用，預設 `gemini-3.5-flash-lite` |
 | `SYSTEM_PROMPT` | | 自訂 AI 角色設定 |
 | `MAX_TURNS` | | 記憶輪數，預設 10 |
 | `SESSION_TTL` | | 記憶保留秒數，預設 3600 |
@@ -100,5 +101,5 @@ pytest -q
 | 訊息「已讀」但 Bot 沒回 | LINE 官方帳號後台 → 設定 → 回應設定：**聊天關閉**、**Webhook 開啟**。聊天開著時訊息會進真人客服收件匣 |
 | 收到「本帳號無法個別回覆用戶的訊息」 | 同一頁把 **自動回應訊息** 關閉 |
 | Verify 出現 400 Bad Request | `LINE_CHANNEL_SECRET` 填錯（貼反、多了字）。到 LINE Basic settings 重新複製，貼到 Render → Environment |
-| Bot 回「請稍後再試」 | Gemini 金鑰錯誤或超過免費額度；到 Render → Logs 搜尋「呼叫 AI 失敗」看原因 |
+| Bot 回「請稍後再試」 | 到 Render → Logs 搜尋「Gemini」：503 是 Google 忙線（程式會自動重試並改用備用模型）、400/403 是金鑰錯誤、429 是超過免費額度 |
 | 很久沒用後第一則訊息很慢 | Render 免費方案閒置會休眠，第一則約需 1 分鐘喚醒 |
