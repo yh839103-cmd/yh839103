@@ -65,14 +65,16 @@ LINE Platform ◀──Reply API────────────────
 | `app/llm.py` | 呼叫 Claude API，設定模型與系統提示詞 |
 | `tests/test_core.py` | 核心邏輯單元測試 |
 
-## 5. 開發時程（4 週）
+## 5. 開發時程（一天完成）
 
-| 週次 | 工作項目 | 產出 |
+程式已完成，今天只需申請金鑰、部署與實機測試，約 4 小時。
+
+| 時段 | 工作項目 | 產出 |
 |---|---|---|
-| 第 1 週 | 需求確認、申請 LINE Messaging API Channel 與 Anthropic API 金鑰、建立 GitHub repo | 計畫書、空專案 |
-| 第 2 週 | 實作 Webhook、AI 對話、對話記憶、指令 | 可在本機以 ngrok 測試的 Bot |
-| 第 3 週 | 撰寫測試、錯誤處理、長訊息切段、設定 GitHub Actions | 測試全數通過 |
-| 第 4 週 | 部署至雲端（Render）、實機測試、撰寫使用說明 | 上線版本、README |
+| 上午 | 申請 LINE Messaging API Channel 與 Anthropic API 金鑰 | 3 組金鑰 |
+| 上午 | 程式、測試、計畫書推上 GitHub | GitHub repo |
+| 下午 | 在 Render 一鍵部署、填入 Webhook URL | 上線的 Bot |
+| 下午 | 用手機加好友實測：聊天、/help、/reset | 測試完成 |
 
 ## 6. 部署方式
 
