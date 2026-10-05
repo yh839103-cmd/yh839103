@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LINE Bot 開發紀錄</title>
+<style>
+  :root { --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb; --bg:#f8fafc; --accent:#06c755; --warn:#f59e0b; --bad:#ef4444; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif; color:var(--ink); background:var(--bg); line-height:1.7; }
+  header { background:#fff; border-bottom:1px solid var(--line); padding:28px 16px; }
+  main, .wrap { max-width:880px; margin:0 auto; }
+  main { padding:8px 16px 48px; }
+  h1 { margin:0 0 6px; font-size:1.7rem; }
+  h2 { font-size:1.25rem; margin:36px 0 12px; padding-left:10px; border-left:4px solid var(--accent); }
+  .sub { color:var(--muted); margin:0; }
+  nav { margin-top:14px; display:flex; flex-wrap:wrap; gap:8px; }
+  nav a { font-size:.9rem; text-decoration:none; color:var(--ink); background:var(--bg); border:1px solid var(--line); border-radius:999px; padding:4px 12px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:16px 18px; margin:12px 0; }
+  table { width:100%; border-collapse:collapse; background:#fff; font-size:.95rem; }
+  th, td { border:1px solid var(--line); padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#f1f5f9; }
+  .ok { color:#047857; font-weight:700; } .todo { color:#b45309; font-weight:700; } .bad { color:#b91c1c; font-weight:700; }
+  .tl { list-style:none; padding:0; margin:0; }
+  .tl li { position:relative; padding:0 0 14px 22px; border-left:2px solid var(--line); margin-left:6px; }
+  .tl li::before { content:""; position:absolute; left:-7px; top:6px; width:12px; height:12px; border-radius:50%; background:var(--accent); }
+  .tl b { display:inline-block; min-width:52px; }
+  figure { margin:14px 0; background:#fff; border:1px solid var(--line); border-radius:12px; padding:10px; }
+  figure img { width:100%; height:auto; border-radius:6px; display:block; }
+  figcaption { font-size:.88rem; color:var(--muted); margin-top:6px; }
+  pre { background:#0f172a; color:#e2e8f0; padding:14px; border-radius:10px; overflow-x:auto; font-size:.85rem; line-height:1.5; }
+  .placeholder { border:2px dashed var(--warn); background:#fffbeb; border-radius:12px; padding:16px; color:#92400e; }
+  footer { text-align:center; color:var(--muted); font-size:.85rem; padding:24px 16px; }
+  @media (max-width:600px) { table { font-size:.85rem; } th, td { padding:6px; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>🤖 LINE AI 聊天助理「安鎧Ai」開發紀錄</h1>
+    <p class="sub">W5 課堂作業 LINE Bot 第一版 · 2026-10-05 · 作者：劉安鎧</p>
+    <nav>
+      <a href="#links">專案連結</a><a href="#overview">專案簡介</a><a href="#timeline">開發過程</a>
+      <a href="#test">實測證明</a><a href="#issues">問題與解法</a><a href="#status">目前進度</a><a href="#next">待改善</a><a href="#ai">AI 協作說明</a>
+    </nav>
+  </div>
+</header>
+<main>
+
+<h2 id="links">專案連結</h2>
+<table>
+  <tr><th>GitHub 專案（程式碼）</th><td><a href="https://github.com/yh839103-cmd/yh839103">https://github.com/yh839103-cmd/yh839103</a></td></tr>
+  <tr><th>專題計畫</th><td><a href="https://github.com/yh839103-cmd/yh839103/blob/main/docs/PROPOSAL.md">docs/PROPOSAL.md</a>（另附 PDF）</td></tr>
+  <tr><th>Bot 伺服器（健康檢查）</th><td><a href="https://line-ai-bot-eu03.onrender.com/">https://line-ai-bot-eu03.onrender.com/</a>（打開顯示 OK 代表運作中）</td></tr>
+  <tr><th>LINE 官方帳號 ID</th><td>@314bpqbd</td></tr>
+</table>
+
+<h2 id="overview">專案簡介</h2>
+<div class="card">
+  <p>一個放在 LINE 裡的 AI 聊天機器人。使用者用手機加好友後，直接傳訊息就能得到 AI 回答，不用另外下載 App。全部使用免費方案，費用 0 元。</p>
+  <ul>
+    <li>💬 AI 對話（Google Gemini 免費 API），繁體中文、台灣用語</li>
+    <li>🧠 記得最近 10 輪對話，可以接著追問</li>
+    <li>🔎 會自己查資料：中文維基百科（知識）、Open-Meteo（天氣），並註明來源</li>
+    <li>⌨️ 指令：「說明」顯示用法、「重新開始」清除記憶</li>
+    <li>🔁 Google 忙線時自動重試，並換用其他免費模型</li>
+  </ul>
+  <p><b>系統架構</b></p>
+<pre>手機 LINE ⇄ LINE 平台 ──Webhook──▶ Render 上的程式（Python + Flask）
+                                      ├─▶ 對話記憶（最近 10 輪）
+                                      ├─▶ Gemini AI ──需要時──▶ 維基百科／天氣
+                                      └─▶ Reply API 把答案傳回 LINE</pre>
+  <table>
+    <tr><th>服務</th><th>用途</th><th>費用</th></tr>
+    <tr><td>LINE Developers / 官方帳號</td><td>Bot 帳號、收發訊息</td><td>免費</td></tr>
+    <tr><td>Google AI Studio（Gemini API）</td><td>AI 回答</td><td>免費方案</td></tr>
+    <tr><td>GitHub</td><td>存放程式碼與文件</td><td>免費</td></tr>
+    <tr><td>Render</td><td>24 小時執行程式</td><td>免費方案</td></tr>
+  </table>
+</div>
+
+<h2 id="timeline">開發過程（2026-10-05）</h2>
+<ul class="tl">
+  <li><b>09:53</b> 開始。決定做「AI 聊天助理」、使用 Python，結果放上 GitHub</li>
+  <li><b>10:00</b> AI 協助產生專題計畫與程式（Flask + LINE SDK），撰寫 9 項單元測試</li>
+  <li><b>10:05</b> 計畫書改寫成白話版，時程改為一天完成</li>
+  <li><b>10:05–10:19</b> 申請 LINE 官方帳號「安鎧Ai」，開啟 Messaging API，取得 Channel secret 與 access token</li>
+  <li><b>10:19</b> 原規劃用 Claude API，但需付費 → <b>改用 Gemini 免費方案</b>，程式同步改寫</li>
+  <li><b>10:24</b> 在 Google AI Studio 取得免費 Gemini 金鑰</li>
+  <li><b>10:29</b> 授權後把程式推上 GitHub</li>
+  <li><b>10:33–10:39</b> 用 Render Blueprint 部署，服務 Live</li>
+  <li><b>10:41</b> 把 Render 網址填入 LINE Webhook URL</li>
+  <li><b>10:43–11:00</b> 除錯：訊息沒回應 → 自動回應罐頭訊息 → Verify 400（見「問題與解法」）</li>
+  <li><b>11:00</b> Webhook 接通，Bot 開始回覆，但回「忙不過來」（Gemini 503）</li>
+  <li><b>11:04</b> 加入自動重試與備用模型，Bot 正常回答 ✅</li>
+  <li><b>11:06–11:16</b> 回答品質加強：加入現在時間、回答原則、維基百科與天氣查詢工具</li>
+  <li><b>11:20</b> 專案紀錄上傳到個人儀表板 my-panel</li>
+</ul>
+
+<h2 id="test">實測證明</h2>
+<div class="card">
+  <p><b>測試項目與結果</b></p>
+  <table>
+    <tr><th>#</th><th>測試項目</th><th>方法</th><th>結果</th></tr>
+    <tr><td>1</td><td>伺服器運作</td><td>瀏覽器打開 Render 網址</td><td class="ok">✔ 顯示 OK</td></tr>
+    <tr><td>2</td><td>部署狀態</td><td>Render 服務頁</td><td class="ok">✔ Live（圖 1）</td></tr>
+    <tr><td>3</td><td>Webhook 設定</td><td>LINE Developers → Webhook URL + Use webhook</td><td class="ok">✔ 已設定（圖 2）</td></tr>
+    <tr><td>4</td><td>Webhook 驗證</td><td>按 Verify</td><td class="ok">✔ 修正 secret 後 Success（修正前為 400，圖 5）</td></tr>
+    <tr><td>5</td><td>手機傳訊息 → AI 回覆</td><td>手機 LINE 傳「你好」</td><td class="ok">✔ 有回覆（圖 3 紀錄：AI 回覆完成、已回覆 LINE）</td></tr>
+    <tr><td>6</td><td>Google 忙線處理</td><td>遇到 Gemini 503</td><td class="ok">✔ 自動重試／換模型後成功回答</td></tr>
+    <tr><td>7</td><td>程式單元測試</td><td>pytest（19 項）</td><td class="ok">✔ 全部通過</td></tr>
+    <tr><td>8</td><td>維基百科查詢</td><td>問「台北 101 有多高？」</td><td class="todo">△ 已上線，待逐題驗證是否附來源</td></tr>
+    <tr><td>9</td><td>天氣查詢</td><td>問「明天高雄會下雨嗎？」</td><td class="todo">△ 已上線，待逐題驗證</td></tr>
+    <tr><td>10</td><td>指令</td><td>傳「說明」「重新開始」</td><td class="todo">△ 待測</td></tr>
+  </table>
+</div>
+
+<div class="placeholder" id="phone-proof">
+  📱 <b>手機對話截圖</b>：（請放上手機 LINE 與 Bot 對話的截圖，作為最直接的實測證明）
+</div>
+
+<figure><img src="img/render-live.png" alt="Render 服務 Live"><figcaption>圖 1：Render 服務狀態 Live，網址 line-ai-bot-eu03.onrender.com</figcaption></figure>
+<figure><img src="img/webhook-setting.png" alt="LINE Webhook 設定"><figcaption>圖 2：LINE Developers 的 Webhook URL 已設為 /callback，Use webhook 開啟</figcaption></figure>
+<figure><img src="img/log-reply.png" alt="Render Logs 回覆紀錄"><figcaption>圖 3：Render Logs 顯示 Gemini 503 錯誤後，「AI 回覆完成，共 1 則」「已回覆 LINE」，證明訊息流程完整走通</figcaption></figure>
+
+<h2 id="issues">遇到的問題與解法</h2>
+<table>
+  <tr><th>問題</th><th>原因</th><th>解法</th></tr>
+  <tr><td>訊息「已讀」但 Bot 不回</td><td>官方帳號「聊天」開著，訊息進了真人客服收件匣（圖 4）</td><td>回應設定：聊天關閉、Webhook 開啟</td></tr>
+  <tr><td>收到「本帳號無法個別回覆用戶的訊息」</td><td>LINE 內建自動回應</td><td>關閉「自動回應訊息」</td></tr>
+  <tr><td>Logs 只有 GET /，沒有 POST /callback</td><td>LINE 沒把訊息送到 Bot（圖 6）</td><td>用 Verify 測試，找出是簽章錯誤</td></tr>
+  <tr><td>Verify 出現 400 Bad Request（圖 5）</td><td>Render 裡的 Channel secret 填錯</td><td>從 LINE 重新複製貼上；程式改為自動去除金鑰前後空白</td></tr>
+  <tr><td>Bot 回「現在忙不過來」</td><td>Gemini 回傳 503，Google 伺服器忙線</td><td>自動重試，並依序改用其他免費模型</td></tr>
+  <tr><td>回答不太正確</td><td>免費版不能用 Google 搜尋；AI 不知道今天日期</td><td>加入日期與回答原則，接上維基百科與天氣查詢</td></tr>
+</table>
+<figure><img src="img/oa-response-setting.png" alt="官方帳號回應設定"><figcaption>圖 4：除錯時的回應設定，「聊天」開著且為「手動聊天」，訊息不會交給 Bot</figcaption></figure>
+<figure><img src="img/verify-400.png" alt="Verify 400 錯誤"><figcaption>圖 5：Webhook Verify 回傳 400，原因是 Channel secret 不正確</figcaption></figure>
+<figure><img src="img/log-no-callback.png" alt="Logs 沒有 callback"><figcaption>圖 6：Logs 只有 Render 健康檢查（GET /），沒有 LINE 的 POST /callback</figcaption></figure>
+
+<h2 id="status">目前進度</h2>
+<table>
+  <tr><th>項目</th><th>狀態</th></tr>
+  <tr><td>專題計畫</td><td class="ok">✔ 完成</td></tr>
+  <tr><td>LINE 官方帳號與 Webhook</td><td class="ok">✔ 完成</td></tr>
+  <tr><td>AI 對話與對話記憶</td><td class="ok">✔ 完成，手機實測可回覆</td></tr>
+  <tr><td>部署到雲端（Render）</td><td class="ok">✔ 完成，24 小時運作</td></tr>
+  <tr><td>GitHub 專案與 README</td><td class="ok">✔ 完成</td></tr>
+  <tr><td>維基百科／天氣查詢</td><td class="todo">△ 已上線，待完整驗證</td></tr>
+</table>
+
+<h2 id="next">待改善的問題</h2>
+<ul>
+  <li>回答正確性：免費 API 無法 Google 搜尋，新聞、價格等即時資訊仍可能過時</li>
+  <li>免費方案限制：Gemini 有每分鐘／每天次數上限，尖峰時可能忙線</li>
+  <li>Render 免費方案閒置會休眠，久沒用後第一則訊息約慢 1 分鐘</li>
+  <li>對話記憶存在記憶體，伺服器重啟後會忘記；之後改存資料庫</li>
+  <li>群組中每則訊息都會回覆，之後改成被 @ 才回覆</li>
+  <li>尚未支援圖片、貼圖；之後加入圖片理解與圖文選單</li>
+</ul>
+
+<h2 id="ai">AI 協作說明</h2>
+<div class="card">
+  本專案的計畫書、程式碼、測試、除錯與這個開發紀錄網頁，皆在與 AI 助理（Claude）對話中協作完成。
+  由我負責申請各平台帳號、設定金鑰、部署與手機實測，AI 負責撰寫程式、分析錯誤紀錄並提出修正。
+  所有金鑰只存放在 Render 環境變數，未放入程式或文件。
+</div>
+
+</main>
+<footer>LINE AI 聊天助理 · 開發紀錄 · 2026-10-05</footer>
+</body>
+</html>
