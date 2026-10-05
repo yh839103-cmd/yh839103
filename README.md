@@ -92,3 +92,13 @@ pytest -q
 - 對話記憶存在伺服器記憶體中，重啟後會清空；因此 gunicorn 只用 1 個 worker（多執行緒）。
 - 請勿把 `.env` 上傳到 GitHub。
 - Gemini 免費方案有每分鐘／每天的次數限制，超過時 Bot 會回「請稍後再試」；實際額度可在 Google AI Studio 查看。
+
+## 常見問題
+
+| 狀況 | 原因與解法 |
+|---|---|
+| 訊息「已讀」但 Bot 沒回 | LINE 官方帳號後台 → 設定 → 回應設定：**聊天關閉**、**Webhook 開啟**。聊天開著時訊息會進真人客服收件匣 |
+| 收到「本帳號無法個別回覆用戶的訊息」 | 同一頁把 **自動回應訊息** 關閉 |
+| Verify 出現 400 Bad Request | `LINE_CHANNEL_SECRET` 填錯（貼反、多了字）。到 LINE Basic settings 重新複製，貼到 Render → Environment |
+| Bot 回「請稍後再試」 | Gemini 金鑰錯誤或超過免費額度；到 Render → Logs 搜尋「呼叫 AI 失敗」看原因 |
+| 很久沒用後第一則訊息很慢 | Render 免費方案閒置會休眠，第一則約需 1 分鐘喚醒 |
