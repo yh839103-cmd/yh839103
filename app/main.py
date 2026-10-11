@@ -14,11 +14,21 @@ from linebot.v3.messaging import (
     MessagingApi,
     ReplyMessageRequest,
     ShowLoadingAnimationRequest,
-    TextMessage,
 )
-from linebot.v3.webhooks import FollowEvent, MessageEvent, TextMessageContent
+from linebot.v3.webhooks import (
+    AudioMessageContent,
+    FileMessageContent,
+    FollowEvent,
+    ImageMessageContent,
+    LocationMessageContent,
+    MessageEvent,
+    StickerMessageContent,
+    TextMessageContent,
+    VideoMessageContent,
+)
 
-from app.core import HELP_TEXT, ChatService, ConversationStore
+from app.core import HELP_TEXT, NON_TEXT_TEXT, ChatService, ConversationStore
+from app.line_messages import build_messages
 from app.llm import GeminiLLM
 
 logging.basicConfig(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -61,7 +71,7 @@ def _reply(reply_token: str, texts: list[str]) -> None:
         MessagingApi(api_client).reply_message(
             ReplyMessageRequest(
                 reply_token=reply_token,
-                messages=[TextMessage(text=t) for t in texts],
+                messages=build_messages(texts),  # 最後一則附快速回覆按鈕
             )
         )
 
@@ -102,6 +112,26 @@ def on_text(event: MessageEvent):
 @handler.add(FollowEvent)
 def on_follow(event: FollowEvent):
     _reply(event.reply_token, [HELP_TEXT])
+
+
+# 第一版收到貼圖、圖片等非文字訊息時完全不回應，看起來像當機；
+# 改善版改成立刻回覆提示（不需要呼叫 AI）。
+NON_TEXT_TYPES = (
+    StickerMessageContent, ImageMessageContent, VideoMessageContent,
+    AudioMessageContent, FileMessageContent, LocationMessageContent,
+)
+
+
+def on_non_text(event: MessageEvent):
+    log.info("收到非文字訊息：%s", event.message.type)
+    try:
+        _reply(event.reply_token, [NON_TEXT_TEXT])
+    except Exception:  # noqa: BLE001
+        log.exception("回覆非文字訊息失敗")
+
+
+for _type in NON_TEXT_TYPES:
+    handler.add(MessageEvent, message=_type)(on_non_text)
 
 
 if __name__ == "__main__":

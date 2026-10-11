@@ -2,13 +2,22 @@
 
 用 Python + Flask 打造、串接 Google Gemini（免費方案）的 LINE 聊天機器人。支援多輪對話記憶、指令、長訊息自動切段。
 
-📄 計畫書：[docs/PROPOSAL.md](docs/PROPOSAL.md)
+📄 計畫書：[docs/PROPOSAL.md](docs/PROPOSAL.md)　｜　📒 開發紀錄網頁：https://yh839103-cmd.github.io/yh839103/
+
+## 版本紀錄
+
+| 版本 | 日期 | 內容 |
+|---|---|---|
+| v2 改善版 | 2026-10-11 | 改善輸入提示：快速回覆按鈕、非文字訊息提示、中文指令說明 |
+| v1 第一版 | 2026-10-05 | AI 對話、對話記憶、查維基百科與天氣；保留於 [`v1-first-version`](https://github.com/yh839103-cmd/yh839103/tree/v1-first-version) 分支 |
 
 ## 功能
 
 - 💬 AI 對話：傳任何文字訊息，Gemini 會回覆
 - 🧠 對話記憶：記得最近 10 輪對話（閒置 1 小時自動清除）
-- ⌨️ 指令：`/help` 說明、`/reset` 清除記憶
+- ⌨️ 指令：「說明」、「重新開始」（也支援 `/help`、`/reset`）
+- 🔘 **快速回覆按鈕**（v2）：每則回覆下方都有按鈕，不用打字也能操作
+- 🖼️ **非文字訊息提示**（v2）：傳貼圖、圖片、語音等會提示「目前只看得懂文字」，不再沒反應
 - 👋 加好友時自動送出歡迎說明
 - ✂️ 超過 LINE 5000 字上限時自動切段
 - ⏳ AI 思考時顯示「輸入中」動畫
@@ -20,10 +29,11 @@
 ```
 app/
   main.py   # Flask Webhook 伺服器、LINE 事件處理
-  core.py   # 對話記憶、指令、訊息切段（純 Python，可單元測試）
+  core.py   # 對話記憶、指令、訊息切段、提示文字與按鈕設定（純 Python，可單元測試）
+  line_messages.py  # 把文字包成 LINE 訊息並加上快速回覆按鈕
   llm.py    # Gemini API 串接（只用內建 urllib），含重試與工具呼叫
   tools.py  # AI 可呼叫的免費查詢工具：維基百科、天氣
-tests/      # 單元測試
+tests/      # 單元測試＋端對端 webhook 測試
 docs/       # 計畫書
 ```
 

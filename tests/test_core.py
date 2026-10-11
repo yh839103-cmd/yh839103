@@ -90,3 +90,18 @@ def test_llm_failure_returns_friendly_message_and_rolls_back():
     out = svc.handle("u", "q2")
     assert "稍後" in out[0]
     assert [m["content"] for m in store.history("u")] == ["q1", "ok"]
+
+
+def test_help_text_uses_chinese_commands_and_examples():
+    from app.core import HELP_TEXT
+    assert "/help" not in HELP_TEXT and "/reset" not in HELP_TEXT
+    assert "說明" in HELP_TEXT and "重新開始" in HELP_TEXT
+    assert "例如" in HELP_TEXT
+
+
+def test_quick_replies_fit_line_limits_and_commands_work():
+    from app.core import QUICK_REPLIES
+    assert 1 <= len(QUICK_REPLIES) <= 13          # LINE 最多 13 個按鈕
+    assert all(len(label) <= 20 for label, _ in QUICK_REPLIES)  # 按鈕文字最多 20 字
+    sent = [text for _, text in QUICK_REPLIES]
+    assert parse_command(sent[0]) == "help" and parse_command(sent[1]) == "reset"
