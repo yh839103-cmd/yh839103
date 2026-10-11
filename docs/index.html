@@ -120,6 +120,16 @@
     <li><b>下一步</b>：先開啟伺服器網址喚醒 → 確認 Deploys 狀態 → 重新用手機測試 → 補上截圖。若為休眠問題，可開啟 LINE 的「Webhook redelivery」讓 LINE 自動重送訊息。</li>
   </ul>
 </div>
+<h3>⑤ 追加修正：AI「想一半罷工」（2026-10-11）</h3>
+<p>手機實測時出現「輸入中…」後就沒有回覆。檢查程式後找到 3 個原因並修正：</p>
+<table>
+  <tr><th>原因</th><th class="before">修正前</th><th class="after">修正後</th></tr>
+  <tr><td>「輸入中」動畫太短</td><td class="before">20 秒就消失，看起來像放棄</td><td class="after">延長為 60 秒（LINE 上限）</td></tr>
+  <tr><td>AI 沒有整體時間上限</td><td class="before">忙線重試＋換模型＋查資料，可能拖好幾分鐘</td><td class="after">全部合計不超過 45 秒，超過就回「這題我想太久了」</td></tr>
+  <tr><td>回覆期限過了</td><td class="before">LINE 的 reply token 過期，答案送不出去，使用者什麼都沒收到</td><td class="after">回覆失敗時改用推播訊息，一定收得到</td></tr>
+  <tr><td>伺服器休眠</td><td class="before">Render 免費方案休眠時，第一則訊息可能被 LINE 放棄</td><td class="after">GitHub Actions 每 10 分鐘叫醒一次；重送的重複訊息會自動略過</td></tr>
+</table>
+<p>重新測試：自動測試增加為 <b>32 項，全部通過</b>（新增：時間上限、回覆失敗改推播、動畫 60 秒、重複事件只回答一次）。程式變更：<a href="https://github.com/yh839103-cmd/yh839103/commit/5fd568e">commit 5fd568e</a>。手機實測結果待補。</p>
 </section>
 
 <div class="divider">📁 <b>以下為第一版紀錄（2026-10-05 繳交）</b>，內容保留原樣；第一版程式碼保留在 <a href="https://github.com/yh839103-cmd/yh839103/tree/v1-first-version">v1-first-version 分支</a>。</div>
