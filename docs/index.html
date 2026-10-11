@@ -109,9 +109,17 @@
   <tr><td>4</td><td>長回答只在最後一則加按鈕</td><td>端對端測試（8000 字回答切成 2 則）</td><td class="ok">✔ 通過（LINE 只顯示最後一則的按鈕）</td></tr>
   <tr><td>5</td><td>按鈕送出「說明」會觸發說明</td><td>端對端測試</td><td class="ok">✔ 通過</td></tr>
   <tr><td>6</td><td>簽章錯誤的請求會被拒絕</td><td>端對端測試</td><td class="ok">✔ 回傳 400</td></tr>
-  <tr id="phone-rows"><td>7–10</td><td>手機實測：說明、天氣按鈕、貼圖、照片</td><td>手機 LINE 實際操作</td><td class="todo">△ 待手機截圖</td></tr>
+  <tr id="phone-rows"><td>7</td><td>手機實測：傳訊息給 Bot</td><td>手機 LINE 實際操作（2026-10-11 14:21）</td><td class="bad">✖ Bot 未回覆，排查中</td></tr>
 </table>
-<div class="placeholder" id="v2-phone">📱 手機實測截圖（說明、天氣按鈕、貼圖、照片）待補。</div>
+<div class="placeholder" id="v2-phone">
+  <b>📱 手機實測狀況（如實紀錄）</b>
+  <ul>
+    <li><b>結果</b>：改善版推上 GitHub 後，用手機傳訊息給 Bot，Bot 沒有回覆。</li>
+    <li><b>已確認</b>：改善版程式在本機用真正的 LINE SDK 跑 26 項自動測試全部通過，包含模擬 LINE 送來的貼圖、圖片、文字訊息，回覆內容與按鈕都正確（見上方比對結果）。</li>
+    <li><b>推測原因</b>：Render 免費方案閒置後會休眠，喚醒約需 1 分鐘；LINE 等不到伺服器回應就會放棄該則訊息。另一個可能是新版部署失敗，需到 Render 的 Deploys 與 Logs 確認。</li>
+    <li><b>下一步</b>：先開啟伺服器網址喚醒 → 確認 Deploys 狀態 → 重新用手機測試 → 補上截圖。若為休眠問題，可開啟 LINE 的「Webhook redelivery」讓 LINE 自動重送訊息。</li>
+  </ul>
+</div>
 </section>
 
 <div class="divider">📁 <b>以下為第一版紀錄（2026-10-05 繳交）</b>，內容保留原樣；第一版程式碼保留在 <a href="https://github.com/yh839103-cmd/yh839103/tree/v1-first-version">v1-first-version 分支</a>。</div>
