@@ -30,6 +30,15 @@
   figcaption { font-size:.88rem; color:var(--muted); margin-top:6px; }
   pre { background:#0f172a; color:#e2e8f0; padding:14px; border-radius:10px; overflow-x:auto; font-size:.85rem; line-height:1.5; }
   .placeholder { border:2px dashed var(--warn); background:#fffbeb; border-radius:12px; padding:16px; color:#92400e; }
+  .v2 { background:#f0fdf4; border:2px solid var(--accent); border-radius:16px; padding:4px 18px 18px; margin-top:20px; }
+  .v2 h2 { border-left-color:#047857; }
+  .v2 h3 { font-size:1.05rem; margin:22px 0 8px; }
+  .tag { display:inline-block; font-size:.8rem; font-weight:700; padding:2px 10px; border-radius:999px; background:var(--accent); color:#fff; vertical-align:middle; }
+  .before { background:#fef2f2; } .after { background:#f0fdf4; }
+  .phones { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+  .phones figure { margin:0; }
+  .divider { margin:48px 0 0; padding:14px 18px; background:#f1f5f9; border-radius:12px; color:var(--muted); }
+  .divider b { color:var(--ink); }
   footer { text-align:center; color:var(--muted); font-size:.85rem; padding:24px 16px; }
   @media (max-width:600px) { table { font-size:.85rem; } th, td { padding:6px; } }
 </style>
@@ -38,18 +47,79 @@
 <header>
   <div class="wrap">
     <h1>🤖 LINE AI 聊天助理「安鎧Ai」開發紀錄</h1>
-    <p class="sub">W5 課堂作業 LINE Bot 第一版 · 2026-10-05 · 作者：劉安鎧</p>
+    <p class="sub">W5 LINE Bot · 第一版 2026-10-05 ／ 改善版 2026-10-11 · 作者：劉安鎧</p>
     <nav>
-      <a href="#links">專案連結</a><a href="#overview">專案簡介</a><a href="#timeline">開發過程</a>
+      <a href="#v2"><b>✨ 改善版</b></a><a href="#v2-test"><b>改善版實測</b></a><a href="#links">專案連結</a><a href="#overview">專案簡介</a><a href="#timeline">開發過程</a>
       <a href="#test">實測證明</a><a href="#issues">問題與解法</a><a href="#status">目前進度</a><a href="#next">待改善</a><a href="#ai">AI 協作說明</a>
     </nav>
   </div>
 </header>
 <main>
 
+<section class="v2" id="v2">
+<h2>✨ 改善版（v2，2026-10-11）：改善輸入提示 <span class="tag">本次新增</span></h2>
+<p>以第一版為起點，使用 AI agent（Claude）找出問題、修改程式、寫測試並比對前後差異。第一版的程式與紀錄完整保留（見下方「專案連結」與「第一版紀錄」）。</p>
+
+<h3>① 原本的問題</h3>
+<ul>
+  <li><b>不知道可以問什麼</b>：加好友後只有一段文字說明，沒有範例，也沒有可以點的選項，每次都要自己想、自己打字。</li>
+  <li><b>指令不直覺</b>：說明裡寫的是 <code>/help</code>、<code>/reset</code>，手機上要切換鍵盤打斜線，很少人會用。</li>
+  <li><b>傳貼圖、圖片完全沒反應</b>：Bot 只處理文字，收到貼圖或照片時什麼都不回，使用者會以為 Bot 壞掉了。第一版計畫書的「目前的限制」與「待改善」已列出這點。</li>
+</ul>
+
+<h3>② 修改內容</h3>
+<ul>
+  <li><b>快速回覆按鈕</b>：每次回覆的最後一則訊息下方，都會出現 5 個按鈕：📖 說明、🔄 重新開始、🌤 今天天氣、💡 冷知識、🍱 晚餐吃什麼。點一下就會替使用者送出對應的訊息。</li>
+  <li><b>非文字訊息提示</b>：收到貼圖、圖片、影片、語音、檔案、位置時，立刻回覆「我目前只看得懂文字喔」並附上按鈕，不必等 AI。</li>
+  <li><b>說明文字改版</b>：改成中文指令（「說明」、「重新開始」），並附 3 個範例問題；舊的 <code>/help</code>、<code>/reset</code> 仍可使用。</li>
+  <li><b>新增測試</b>：除了原本的單元測試，新增「端對端 webhook 測試」，用正確簽章送假的 LINE 訊息進伺服器，檢查實際會回覆什麼。</li>
+</ul>
+<table>
+  <tr><th>檔案</th><th>修改</th></tr>
+  <tr><td>app/core.py</td><td>新的說明文字、非文字提示、按鈕設定 <code>QUICK_REPLIES</code></td></tr>
+  <tr><td>app/line_messages.py（新）</td><td>把回覆包成 LINE 訊息，在最後一則加上快速回覆按鈕</td></tr>
+  <tr><td>app/main.py</td><td>回覆時附按鈕；新增貼圖、圖片等 6 種非文字訊息的處理</td></tr>
+  <tr><td>tests/test_webhook.py（新）、tests/test_core.py</td><td>新增 7 項測試（端對端 5 項、單元 2 項）</td></tr>
+</table>
+<p>程式變更：<a href="https://github.com/yh839103-cmd/yh839103/commit/e3a8e36">改善版 commit e3a8e36</a>　｜　<a href="https://github.com/yh839103-cmd/yh839103/compare/9457578...e3a8e36">第一版 → 改善版完整差異</a></p>
+
+<h3>③ 前後差異</h3>
+<table>
+  <tr><th>情境</th><th class="before">第一版（v1）</th><th class="after">改善版（v2）</th></tr>
+  <tr><td>傳一張貼圖或照片</td><td class="before">沒有任何回應</td><td class="after">立刻回覆「我目前只看得懂文字喔 🙏」＋按鈕</td></tr>
+  <tr><td>收到 AI 的回答後</td><td class="before">只有文字，下一句要自己想</td><td class="after">下方出現 5 個快速回覆按鈕</td></tr>
+  <tr><td>想清除記憶、換話題</td><td class="before">要打「/reset」或「重新開始」</td><td class="after">點 🔄 重新開始</td></tr>
+  <tr><td>看說明</td><td class="before">只列出 /help、/reset 兩個指令</td><td class="after">中文指令＋3 個範例問題＋按鈕說明</td></tr>
+  <tr><td>AI 忙線時</td><td class="before">「請稍後再試一次」</td><td class="after">同樣提示，並附按鈕可直接換問題</td></tr>
+</table>
+<p>用同一組測試情境分別跑第一版和改善版的程式（實際執行結果）：</p>
+<pre style="white-space:pre-wrap;word-break:break-all">第一版 傳貼圖 → HTTP 200 回覆則數： 0
+第一版 傳文字 → 回覆： AI回答 ｜快速回覆按鈕： None
+第一版 說明文字： "嗨！我是 AI 聊天助理 🤖\n直接傳訊息給我就能聊天。\n\n可用指令：\n/help  顯示說明\n/reset 清除對話記憶，重新開始"
+
+改善版 傳貼圖 → HTTP 200 回覆則數： 1 ｜內容： "我目前只看得懂文字喔 🙏\n貼圖、圖片、語音和檔案我還看不懂，請直接打字問我，或點下方按鈕試試看。"
+改善版 傳文字 → 回覆： AI回答 ｜按鈕： ['📖 說明', '🔄 重新開始', '🌤 今天天氣', '💡 冷知識', '🍱 晚餐吃什麼']</pre>
+
+<h3 id="v2-test">④ 重新測試結果</h3>
+<table>
+  <tr><th>#</th><th>測試項目</th><th>方法</th><th>結果</th></tr>
+  <tr><td>1</td><td>全部自動測試</td><td>單元測試＋端對端 webhook 測試，使用真正的 LINE SDK</td><td class="ok">✔ 26 項全部通過（第一版 19 項）</td></tr>
+  <tr><td>2</td><td>傳貼圖會回提示</td><td>端對端測試（假的貼圖訊息）</td><td class="ok">✔ 回覆 1 則提示＋5 個按鈕（第一版 0 則）</td></tr>
+  <tr><td>3</td><td>傳照片會回提示</td><td>端對端測試（假的圖片訊息）</td><td class="ok">✔ 通過</td></tr>
+  <tr><td>4</td><td>長回答只在最後一則加按鈕</td><td>端對端測試（8000 字回答切成 2 則）</td><td class="ok">✔ 通過（LINE 只顯示最後一則的按鈕）</td></tr>
+  <tr><td>5</td><td>按鈕送出「說明」會觸發說明</td><td>端對端測試</td><td class="ok">✔ 通過</td></tr>
+  <tr><td>6</td><td>簽章錯誤的請求會被拒絕</td><td>端對端測試</td><td class="ok">✔ 回傳 400</td></tr>
+  <tr id="phone-rows"><td>7–10</td><td>手機實測：說明、天氣按鈕、貼圖、照片</td><td>手機 LINE 實際操作</td><td class="todo">△ 待手機截圖</td></tr>
+</table>
+<div class="placeholder" id="v2-phone">📱 手機實測截圖（說明、天氣按鈕、貼圖、照片）待補。</div>
+</section>
+
+<div class="divider">📁 <b>以下為第一版紀錄（2026-10-05 繳交）</b>，內容保留原樣；第一版程式碼保留在 <a href="https://github.com/yh839103-cmd/yh839103/tree/v1-first-version">v1-first-version 分支</a>。</div>
+
 <h2 id="links">專案連結</h2>
 <table>
-  <tr><th>GitHub 專案（程式碼）</th><td><a href="https://github.com/yh839103-cmd/yh839103">https://github.com/yh839103-cmd/yh839103</a></td></tr>
+  <tr><th>GitHub 專案（程式碼）</th><td><a href="https://github.com/yh839103-cmd/yh839103">https://github.com/yh839103-cmd/yh839103</a>（main 分支為改善版）</td></tr>
+  <tr><th>第一版程式碼</th><td><a href="https://github.com/yh839103-cmd/yh839103/tree/v1-first-version">v1-first-version 分支</a>（commit 9457578）</td></tr>
   <tr><th>專題計畫</th><td><a href="https://github.com/yh839103-cmd/yh839103/blob/main/docs/PROPOSAL.md">docs/PROPOSAL.md</a>（另附 PDF）</td></tr>
   <tr><th>Bot 伺服器（健康檢查）</th><td><a href="https://line-ai-bot-eu03.onrender.com/">https://line-ai-bot-eu03.onrender.com/</a>（打開顯示 OK 代表運作中）</td></tr>
   <tr><th>LINE 官方帳號 ID</th><td>@314bpqbd</td></tr>
