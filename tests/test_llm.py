@@ -133,3 +133,24 @@ def test_weather_parsing():
     with mock.patch("app.tools._get_json", side_effect=[geo, fc]):
         out = tools.get_weather("Taipei")
     assert out["now"]["weather"] == "晴" and out["forecast"][0]["weather"] == "小雨"
+
+
+def test_time_budget_exhausted_raises_timeout_without_calling_api():
+    llm = GeminiLLM(api_key="k", model="main", fallback_models=["lite"], use_tools=False)
+    llm.time_budget = 0
+    with mock.patch("urllib.request.urlopen") as op:
+        try:
+            llm([{"role": "user", "content": "hi"}])
+        except TimeoutError:
+            pass
+        else:
+            raise AssertionError("expected TimeoutError")
+    assert op.call_count == 0
+
+
+def test_request_timeout_never_exceeds_remaining_budget():
+    llm = GeminiLLM(api_key="k", model="main", fallback_models=["lite"], use_tools=False)
+    llm.time_budget, llm.timeout = 10, 20
+    with mock.patch("urllib.request.urlopen", return_value=_ok("好")) as op:
+        assert llm([{"role": "user", "content": "hi"}]) == "好"
+    assert op.call_args.kwargs["timeout"] <= 10

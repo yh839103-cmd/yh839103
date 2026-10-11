@@ -1,0 +1,12 @@
+# 每 10 分鐘叫醒一次 Render 免費方案的伺服器，避免休眠後第一則訊息被 LINE 放棄
+# （GitHub 的排程可能延遲幾分鐘；公開 repo 免費）
+name: keep-awake
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS --max-time 90 https://line-ai-bot-eu03.onrender.com/ || true

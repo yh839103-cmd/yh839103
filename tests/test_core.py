@@ -105,3 +105,18 @@ def test_quick_replies_fit_line_limits_and_commands_work():
     assert all(len(label) <= 20 for label, _ in QUICK_REPLIES)  # 按鈕文字最多 20 字
     sent = [text for _, text in QUICK_REPLIES]
     assert parse_command(sent[0]) == "help" and parse_command(sent[1]) == "reset"
+
+
+def test_timeout_returns_slow_message_and_rolls_back():
+    from app.core import SLOW_TEXT
+
+    class SlowLLM:
+        def __call__(self, history):
+            raise TimeoutError("too slow")
+
+    store = ConversationStore()
+    svc = ChatService(FakeLLM("ok"), store)
+    svc.handle("u", "q1")
+    svc.llm = SlowLLM()
+    assert svc.handle("u", "q2") == [SLOW_TEXT]
+    assert [m["content"] for m in store.history("u")] == ["q1", "ok"]

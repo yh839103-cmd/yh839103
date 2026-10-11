@@ -31,6 +31,7 @@ NON_TEXT_TEXT = (
     "貼圖、圖片、語音和檔案我還看不懂，請直接打字問我，或點下方按鈕試試看。"
 )
 FAIL_TEXT = "抱歉，我現在有點忙不過來 😵 請稍後再試一次，或點下方按鈕換個問題。"
+SLOW_TEXT = "這題我想太久了 😅 請換個簡單一點的問法，或稍後再試一次。"
 
 # 每則回覆下方都會出現的快速回覆按鈕：(按鈕文字, 點了之後替使用者送出的訊息)
 # LINE 限制：最多 13 個、按鈕文字最多 20 字
@@ -139,13 +140,13 @@ class ChatService:
         self.store.append(user_id, "user", text)
         try:
             answer = self.llm(self.store.history(user_id))
-        except Exception:  # noqa: BLE001 — 任何 AI 錯誤都不該讓 webhook 失敗
+        except Exception as e:  # noqa: BLE001 — 任何 AI 錯誤都不該讓 webhook 失敗
             logging.getLogger("line-ai-bot").exception("呼叫 AI 失敗")
             # 移除這次的提問，避免留下沒有回覆的 user 訊息
             h = self.store.history(user_id)
             self.store.reset(user_id)
             for m in h[:-1]:
                 self.store.append(user_id, m["role"], m["content"])
-            return [FAIL_TEXT]
+            return [SLOW_TEXT if isinstance(e, TimeoutError) else FAIL_TEXT]
         self.store.append(user_id, "assistant", answer)
         return split_message(answer)

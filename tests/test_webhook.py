@@ -21,10 +21,13 @@ os.environ.setdefault("LINE_CHANNEL_ACCESS_TOKEN", "test-token")
 os.environ.setdefault("GEMINI_API_KEY", "test-key")
 
 
-def _event(message: dict) -> dict:
+_ids = iter(range(10**6))
+
+
+def _event(message: dict, event_id: str | None = None) -> dict:
     return {
         "type": "message", "mode": "active", "timestamp": 1760000000000,
-        "webhookEventId": "01TEST", "deliveryContext": {"isRedelivery": False},
+        "webhookEventId": event_id or f"01TEST{next(_ids)}", "deliveryContext": {"isRedelivery": False},
         "source": {"type": "user", "userId": "U123"}, "replyToken": "rt-1",
         "message": message,
     }
@@ -39,13 +42,15 @@ class _SyncThread:
         self.target(*self.args)
 
 
-def _post(event: dict):
+def _post(event: dict, reply_error: Exception | None = None, api=None):
     """送出一個 webhook，回傳 (HTTP 狀態碼, 回覆給 LINE 的訊息 JSON 列表)。"""
     import app.main as m
     body = json.dumps({"destination": "Ubot", "events": [event]})
     secret = os.environ["LINE_CHANNEL_SECRET"].encode()
     sig = base64.b64encode(hmac.new(secret, body.encode(), hashlib.sha256).digest()).decode()
-    api = mock.MagicMock()
+    api = api or mock.MagicMock()
+    if reply_error is not None:
+        api.return_value.reply_message.side_effect = reply_error
     with mock.patch.object(m, "MessagingApi", api), \
          mock.patch.object(m.threading, "Thread", _SyncThread):
         resp = m.app.test_client().post(
@@ -107,3 +112,41 @@ def test_bad_signature_is_rejected():
     resp = m.app.test_client().post("/callback", data="{}",
                                     headers={"X-Line-Signature": "wrong"})
     assert resp.status_code == 400
+
+
+def test_expired_reply_token_falls_back_to_push():
+    if not HAS_SDK:
+        return
+    import app.main as m
+    api = mock.MagicMock()
+    with mock.patch.object(m.chat, "llm", lambda history: "慢慢想好的答案"):
+        status, _ = _post(_event({"type": "text", "id": "5", "quoteToken": "q", "text": "難題"}),
+                          reply_error=Exception("Invalid reply token"), api=api)
+    assert status == 200
+    push = api.return_value.push_message.call_args[0][0]
+    assert push.to == "U123"
+    assert push.messages[-1].text == "慢慢想好的答案"
+    assert push.messages[-1].quick_reply is not None
+
+
+def test_loading_animation_is_60_seconds():
+    if not HAS_SDK:
+        return
+    import app.main as m
+    api = mock.MagicMock()
+    with mock.patch.object(m.chat, "llm", lambda history: "好"):
+        _post(_event({"type": "text", "id": "6", "quoteToken": "q", "text": "嗨"}), api=api)
+    req = api.return_value.show_loading_animation.call_args[0][0]
+    assert req.loading_seconds == 60
+
+
+def test_redelivered_duplicate_event_is_answered_once():
+    if not HAS_SDK:
+        return
+    import app.main as m
+    calls = []
+    with mock.patch.object(m.chat, "llm", lambda history: calls.append(1) or "答案"):
+        ev = _event({"type": "text", "id": "7", "quoteToken": "q", "text": "同一則"}, event_id="01DUP")
+        _, first = _post(ev)
+        _, second = _post(ev)
+    assert len(first) == 1 and second == [] and len(calls) == 1

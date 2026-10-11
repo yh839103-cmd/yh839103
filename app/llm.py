@@ -36,6 +36,10 @@ TAIWAN_TZ = timezone(timedelta(hours=8))
 log = logging.getLogger("line-ai-bot")
 
 
+class AITimeout(TimeoutError):
+    """整體回答時間超過上限。"""
+
+
 def _env_list(name: str, default: str) -> list[str]:
     return [m.strip() for m in os.getenv(name, default).split(",") if m.strip()]
 
@@ -59,6 +63,9 @@ class GeminiLLM:
         self.temperature = float(os.getenv("GEMINI_TEMPERATURE", "0.4"))
         self.use_tools = (os.getenv("ENABLE_TOOLS", "true").lower() != "false"
                           if use_tools is None else use_tools)
+        # 整體時間上限（秒）：重試、換模型、查資料全部加起來不超過這個時間，
+        # 避免想太久、LINE 的回覆期限過了導致使用者收不到回答
+        self.time_budget = float(os.getenv("AI_TIME_BUDGET", "45"))
 
     # ---------- 組請求 ----------
     def _system_text(self) -> str:
@@ -98,7 +105,7 @@ class GeminiLLM:
         return text
 
     # ---------- 送出（含重試、換模型） ----------
-    def _request(self, model: str, body: dict) -> dict:
+    def _request(self, model: str, body: dict, timeout: float | None = None) -> dict:
         req = urllib.request.Request(
             API_URL.format(model=model),
             data=json.dumps(body).encode("utf-8"),
@@ -106,18 +113,23 @@ class GeminiLLM:
                      "x-goog-api-key": self.api_key},
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+        with urllib.request.urlopen(req, timeout=timeout or self.timeout) as resp:
             return json.load(resp)
 
-    def _post(self, body: dict) -> tuple[dict, str]:
+    def _post(self, body: dict, deadline: float | None = None) -> tuple[dict, str]:
         """主模型試 2 次，再依序試備用模型；回傳 (回應, 實際使用的模型)。"""
+        if deadline is None:
+            deadline = time.monotonic() + self.time_budget
         plan = [self.model, self.model, *self.fallback_models]
         last_error: Exception | None = None
         for attempt, model in enumerate(plan):
-            if attempt:
+            if attempt and deadline - time.monotonic() > 5:
                 time.sleep(1.5)
+            remaining = deadline - time.monotonic()
+            if remaining < 3:
+                raise AITimeout(f"AI 回答超過 {self.time_budget:.0f} 秒上限") from last_error
             try:
-                return self._request(model, body), model
+                return self._request(model, body, timeout=min(self.timeout, remaining)), model
             except urllib.error.HTTPError as e:
                 detail = e.read().decode("utf-8", "replace")[:500]
                 last_error = RuntimeError(f"Gemini API 錯誤 {e.code}（{model}）：{detail}")
@@ -137,9 +149,10 @@ class GeminiLLM:
         raise last_error  # type: ignore[misc]
 
     def __call__(self, history: list[dict]) -> str:
+        deadline = time.monotonic() + self.time_budget
         contents = self.to_contents(history)
         for _ in range(MAX_TOOL_ROUNDS):
-            data, model = self._post(self.build_body(contents))
+            data, model = self._post(self.build_body(contents), deadline)
             content = data["candidates"][0].get("content", {})
             calls = [p["functionCall"] for p in content.get("parts", []) if "functionCall" in p]
             if not calls:
@@ -156,6 +169,6 @@ class GeminiLLM:
                 responses.append({"functionResponse": fr})
             contents.append({"role": "user", "parts": responses})
         # 查太多次還沒結論：不給工具，請它直接用已查到的資料回答
-        data, model = self._post(self.build_body(contents, with_tools=False))
+        data, model = self._post(self.build_body(contents, with_tools=False), deadline)
         log.info("Gemini 回答完成（模型：%s）", model)
         return self.parse(data)
