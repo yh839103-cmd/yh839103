@@ -11,6 +11,11 @@
 | v2 改善版 | 2026-10-11 | 改善輸入提示：快速回覆按鈕、非文字訊息提示、中文指令說明 |
 | v1 第一版 | 2026-10-05 | AI 對話、對話記憶、查維基百科與天氣；保留於 [`v1-first-version`](https://github.com/yh839103-cmd/yh839103/tree/v1-first-version) 分支 |
 
+## 用 AI 寫程式助手開發
+
+- `AGENTS.md`：給 OpenCode 等 AI 助手看的專案說明（檔案地圖、測試指令、必須遵守的規則、待辦清單）
+- `opencode.json`：OpenCode 的本地模型（Ollama）設定
+
 ## 功能
 
 - 💬 AI 對話：傳任何文字訊息，Gemini 會回覆
