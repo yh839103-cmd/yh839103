@@ -80,7 +80,7 @@ def test_tools_declared_when_enabled():
     body = GeminiLLM(api_key="k", system_prompt="s", use_tools=True).build_body(
         [{"role": "user", "content": "hi"}])
     names = [d["name"] for d in body["tools"][0]["functionDeclarations"]]
-    assert names == ["search_wikipedia", "get_weather"]
+    assert names == ["search_wikipedia", "get_weather", "search_web"]
 
 
 def _resp(parts):
@@ -133,6 +133,50 @@ def test_weather_parsing():
     with mock.patch("app.tools._get_json", side_effect=[geo, fc]):
         out = tools.get_weather("Taipei")
     assert out["now"]["weather"] == "晴" and out["forecast"][0]["weather"] == "小雨"
+
+
+def test_search_web_without_key_returns_error():
+    from app import tools
+    with mock.patch.dict("os.environ", {"TAVILY_API_KEY": ""}):
+        out = tools.search_web("最新新聞")
+    assert out == {"error": "搜尋功能尚未設定金鑰"}
+
+
+def test_search_web_calls_tavily_with_bearer_and_parses_results():
+    from app import tools
+    reply = {
+        "answer": "台北 10 月 12 日高溫 32 度",
+        "results": [
+            {"title": "台北高溫", "url": "https://example.com/1",
+             "content": "台北今天高溫" * 100},
+            {"title": "新聞", "url": "https://example.com/2"},
+        ],
+    }
+    fake = mock.MagicMock()
+    fake.__enter__.return_value = io.BytesIO(json.dumps(reply).encode())
+    with mock.patch.dict("os.environ", {"TAVILY_API_KEY": "test-key"}), \
+         mock.patch("urllib.request.urlopen", return_value=fake) as op:
+        out = tools.search_web("台北 天氣")
+    req = op.call_args[0][0]
+    assert req.full_url == "https://api.tavily.com/search"
+    assert req.get_header("Authorization") == "Bearer test-key"
+    sent_headers = {k.lower(): v for k, v in req.headers.items()}
+    assert sent_headers["content-type"] == "application/json"
+    assert req.method == "POST"
+    sent = json.loads(req.data)
+    assert sent["query"] == "台北 天氣" and sent["max_results"] == 5
+    assert out["source"] == "網路搜尋（Tavily）"
+    assert out["answer"] == "台北 10 月 12 日高溫 32 度"
+    assert out["results"][0]["title"] == "台北高溫"
+    assert out["results"][0]["url"] == "https://example.com/1"
+    assert len(out["results"][0]["content"]) <= 300
+    assert out["results"][1]["content"] == ""
+
+
+def test_search_web_declared_and_registered():
+    from app import tools
+    assert any(d["name"] == "search_web" for d in tools.DECLARATIONS)
+    assert "search_web" in tools.FUNCTIONS
 
 
 def test_time_budget_exhausted_raises_timeout_without_calling_api():

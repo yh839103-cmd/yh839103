@@ -94,6 +94,7 @@ docker run --env-file .env -p 8000:8000 line-ai-bot
 | `GEMINI_API_KEY` | ✅ | Google AI Studio 的 API Key |
 | `GEMINI_MODEL` | | 預設 `gemini-flash-latest`（自動使用最新 Flash 模型） |
 | `GEMINI_FALLBACK_MODEL` | | 主模型忙線時依序改用（逗號分隔），預設 `gemini-3.7-flash,gemini-3.5-flash-lite` |
+| `TAVILY_API_KEY` | | Tavily 搜尋 API 金鑰（每月 1,000 次免費），設定後 AI 才能上網查最新資訊 |
 | `ENABLE_TOOLS` | | 設成 `false` 可關閉查資料功能，預設開啟 |
 | `SYSTEM_PROMPT` | | 自訂 AI 角色設定 |
 | `GEMINI_TEMPERATURE` | | 0～2，越低回答越穩定，預設 0.4 |

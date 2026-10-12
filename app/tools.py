@@ -1,18 +1,21 @@
-"""讓 AI 可以自己呼叫的免費查詢工具（不需要任何金鑰）。
+"""讓 AI 可以自己呼叫的免費查詢工具。
 
 - search_wikipedia：查中文維基百科
 - get_weather：用 Open-Meteo 查即時天氣與 3 天預報
+- search_web：用 Tavily 上網搜尋最新資訊（需設定 TAVILY_API_KEY）
 """
 from __future__ import annotations
 
 import json
 import logging
+import os
 import urllib.parse
 import urllib.request
 
 log = logging.getLogger("line-ai-bot")
 UA = {"User-Agent": "line-ai-bot/1.0 (https://github.com/yh839103-cmd/yh839103)"}
 TIMEOUT = 8
+TAVILY_URL = "https://api.tavily.com/search"
 
 # 給 Gemini 看的工具說明（function declarations）
 DECLARATIONS = [
@@ -39,6 +42,20 @@ DECLARATIONS = [
                 "city": {"type": "string", "description": "城市的英文名稱，例如 Taipei、Kaohsiung、Tokyo"},
             },
             "required": ["city"],
+        },
+    },
+    {
+        "name": "search_web",
+        "description": (
+            "上網搜尋最新資訊，例如新聞、近期事件、價格、營業時間、活動日期。"
+            "維基百科查不到或需要最新資料時使用。"
+        ),
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "要搜尋的關鍵字，例如「台北 氣溫破紀錄」"},
+            },
+            "required": ["query"],
         },
     },
 ]
@@ -124,7 +141,41 @@ def get_weather(city: str) -> dict:
     }
 
 
-FUNCTIONS = {"search_wikipedia": search_wikipedia, "get_weather": get_weather}
+def search_web(query: str) -> dict:
+    """用 Tavily 上網搜尋最新資訊；沒有設定金鑰時回傳 error 而不是丟例外。"""
+    key = os.getenv("TAVILY_API_KEY", "").strip()
+    if not key:
+        return {"error": "搜尋功能尚未設定金鑰"}
+    body = json.dumps({
+        "query": query,
+        "search_depth": "basic",
+        "max_results": 5,
+        "include_answer": "basic",
+        "topic": "general",
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        TAVILY_URL,
+        data=body,
+        headers={**UA, "Authorization": f"Bearer {key}",
+                 "Content-Type": "application/json"},
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+        data = json.load(resp)
+    results = [
+        {"title": r.get("title", ""), "url": r.get("url", ""),
+         "content": (r.get("content") or "")[:300]}
+        for r in data.get("results", [])
+    ]
+    return {
+        "source": "網路搜尋（Tavily）",
+        "answer": data.get("answer", ""),
+        "results": results,
+    }
+
+
+FUNCTIONS = {"search_wikipedia": search_wikipedia, "get_weather": get_weather,
+             "search_web": search_web}
 
 
 def run(name: str, args: dict) -> dict:
