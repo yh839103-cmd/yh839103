@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import time
 import urllib.parse
 import urllib.request
 
@@ -185,7 +186,10 @@ def run(name: str, args: dict) -> dict:
         return {"error": f"沒有這個工具：{name}"}
     try:
         log.info("執行工具 %s %s", name, args)
-        return fn(**(args or {}))
+        started = time.monotonic()
+        result = fn(**(args or {}))
+        log.info("工具 %s 完成 %.1f 秒", name, time.monotonic() - started)
+        return result
     except Exception as e:  # noqa: BLE001
         log.warning("工具 %s 失敗：%s", name, e)
         return {"error": f"查詢失敗：{e}"}

@@ -98,7 +98,8 @@ docker run --env-file .env -p 8000:8000 line-ai-bot
 | `ENABLE_TOOLS` | | 設成 `false` 可關閉查資料功能，預設開啟 |
 | `SYSTEM_PROMPT` | | 自訂 AI 角色設定 |
 | `GEMINI_TEMPERATURE` | | 0～2，越低回答越穩定，預設 0.4 |
-| `AI_TIME_BUDGET` | | AI 回答整體時間上限（秒），預設 45 |
+| `AI_TIME_BUDGET` | | AI 回答整體時間上限（秒），預設 60 |
+| `GEMINI_THINKING_LEVEL` | | Gemini 思考程度，預設 `low`（回答較快）；設成空白則用模型預設 |
 | `MAX_TURNS` | | 記憶輪數，預設 10 |
 | `SESSION_TTL` | | 記憶保留秒數，預設 3600 |
 
@@ -126,4 +127,4 @@ pytest -q
 | Bot 回「請稍後再試」 | 到 Render → Logs 搜尋「Gemini」：503 是 Google 忙線（程式會自動重試並改用備用模型）、400/403 是金鑰錯誤、429 是超過免費額度 |
 | 回答不正確或像在亂掰 | Gemini 免費方案無法上網查詢，即時資訊（新聞、天氣、價格）可能過時；可調低 `GEMINI_TEMPERATURE` 或在 `SYSTEM_PROMPT` 寫清楚 Bot 的專長範圍 |
 | 很久沒用後第一則訊息很慢或沒回 | Render 免費方案閒置會休眠；`.github/workflows/keep-awake.yml` 每 10 分鐘叫醒一次，也可在 LINE Developers 開啟 Webhook redelivery |
-| 出現「輸入中」後沒有回覆 | v2 起已修正：AI 整體時間上限 45 秒、動畫 60 秒、回覆期限過了改用推播 |
+| 出現「輸入中」後沒有回覆 | v2 起已修正：AI 整體時間上限 60 秒、動畫 60 秒、回覆期限過了改用推播 |

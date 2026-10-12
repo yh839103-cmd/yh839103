@@ -40,10 +40,10 @@ pytest -q                             # 跑全部測試，必須全部通過
 
 - Render 免費方案：記憶體約 512MB、閒置會休眠；對話記憶存在記憶體，重啟會清空。
 - Gemini 免費方案有每分鐘／每天的次數上限，忙線時會回 503／429（`llm.py` 已處理重試）。
-- LINE 的 reply token 有使用期限：AI 回答整體不能太久（`AI_TIME_BUDGET`，預設 45 秒），逾時改用推播。
+- LINE 的 reply token 有使用期限：AI 回答整體不能太久（`AI_TIME_BUDGET`，預設 60 秒；Gemini 思考程度預設 low），逾時改用推播。
 - LINE 快速回覆按鈕：最多 13 個、按鈕文字最多 20 字，只顯示在最後一則訊息。
 
-## 目前任務：讓 Bot 可以上網搜尋（Tavily）
+## 已完成任務：讓 Bot 可以上網搜尋（Tavily）（保留規格供參考）
 
 Gemini 免費方案不能用 Google 搜尋，所以接 Tavily 搜尋 API（每月 1,000 次免費、不用信用卡）。
 照下面的規格做，**不要新增任何 pip 套件**，HTTP 請求一律用內建的 `urllib`（跟 `tools.py` 現有寫法一樣）。
@@ -75,7 +75,7 @@ Gemini 免費方案不能用 Google 搜尋，所以接 Tavily 搜尋 API（每�
 
 ## 可以做的改善（待辦）
 
-- [ ] 讓 Bot 可以上網搜尋（規格見上方「目前任務」）
+- [x] 讓 Bot 可以上網搜尋（2026-10-12 完成：OpenCode + Big Pickle 實作）
 - [ ] 群組中只在被 @ 提及時才回覆（目前群組每則都回）
 - [ ] 看得懂照片：把使用者傳的圖片交給 Gemini（Gemini 支援圖片輸入）
 - [ ] 傳「位置」時直接回覆該地點的天氣（`tools.get_weather` 已有查詢功能）

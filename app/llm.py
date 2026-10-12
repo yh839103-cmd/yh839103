@@ -48,7 +48,7 @@ def _env_list(name: str, default: str) -> list[str]:
 class GeminiLLM:
     def __init__(self, api_key: str | None = None, model: str | None = None,
                  system_prompt: str | None = None, max_tokens: int = 4096,
-                 timeout: int = 20, fallback_models: list[str] | None = None,
+                 timeout: int = 25, fallback_models: list[str] | None = None,
                  use_tools: bool | None = None):
         self.api_key = (api_key or os.environ["GEMINI_API_KEY"]).strip()
         # gemini-flash-latest 會自動指向 Google 最新、免費可用的 Flash 模型
@@ -66,7 +66,11 @@ class GeminiLLM:
                           if use_tools is None else use_tools)
         # 整體時間上限（秒）：重試、換模型、查資料全部加起來不超過這個時間，
         # 避免想太久、LINE 的回覆期限過了導致使用者收不到回答
-        self.time_budget = float(os.getenv("AI_TIME_BUDGET", "45"))
+        # 回覆期限過了會改用推播，所以可以給 AI 稍微多一點時間（上網搜尋要多跑一輪）
+        self.time_budget = float(os.getenv("AI_TIME_BUDGET", "60"))
+        # 思考程度：low 回答比較快；Google 不接受這個設定時會自動拿掉再試
+        self.thinking_level = os.getenv("GEMINI_THINKING_LEVEL", "low").strip()
+        self._thinking_ok = bool(self.thinking_level)
 
     # ---------- 組請求 ----------
     def _system_text(self) -> str:
@@ -92,6 +96,8 @@ class GeminiLLM:
             "generationConfig": {"maxOutputTokens": self.max_tokens,
                                  "temperature": self.temperature},
         }
+        if self._thinking_ok:
+            body["generationConfig"]["thinkingConfig"] = {"thinkingLevel": self.thinking_level}
         if self.use_tools if with_tools is None else with_tools:
             body["tools"] = [{"functionDeclarations": tools.DECLARATIONS}]
         return body
@@ -130,10 +136,21 @@ class GeminiLLM:
             if remaining < 3:
                 raise AITimeout(f"AI 回答超過 {self.time_budget:.0f} 秒上限") from last_error
             try:
-                return self._request(model, body, timeout=min(self.timeout, remaining)), model
+                started = time.monotonic()
+                data = self._request(model, body, timeout=min(self.timeout, remaining))
+                log.info("Gemini 回應 %.1f 秒（%s）", time.monotonic() - started, model)
+                return data, model
             except urllib.error.HTTPError as e:
                 detail = e.read().decode("utf-8", "replace")[:500]
                 last_error = RuntimeError(f"Gemini API 錯誤 {e.code}（{model}）：{detail}")
+                gen = body.get("generationConfig", {})
+                if e.code == 400 and "thinkingConfig" in gen and "thinking" in detail.lower():
+                    # 這個模型不接受思考程度設定：拿掉後重試，之後也不再送（工具保留）
+                    log.warning("模型 %s 不接受思考程度設定，改用預設", model)
+                    self._thinking_ok = False
+                    body = {**body, "generationConfig": {k: v for k, v in gen.items()
+                                                          if k != "thinkingConfig"}}
+                    continue
                 if e.code == 400 and "tools" in body:
                     # 萬一這個模型不接受工具，拿掉工具再試，至少要回答得出來
                     log.warning("模型 %s 不接受工具，改用純文字模式", model)

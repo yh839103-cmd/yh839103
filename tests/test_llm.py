@@ -198,3 +198,23 @@ def test_request_timeout_never_exceeds_remaining_budget():
     with mock.patch("urllib.request.urlopen", return_value=_ok("好")) as op:
         assert llm([{"role": "user", "content": "hi"}]) == "好"
     assert op.call_args.kwargs["timeout"] <= 10
+
+
+def test_thinking_level_low_by_default():
+    body = GeminiLLM(api_key="k", system_prompt="s", use_tools=True).build_body(
+        [{"role": "user", "content": "hi"}])
+    assert body["generationConfig"]["thinkingConfig"] == {"thinkingLevel": "low"}
+
+
+def test_rejected_thinking_config_is_dropped_but_tools_kept():
+    import urllib.error
+    llm = GeminiLLM(api_key="k", model="main", fallback_models=["lite"], use_tools=True)
+    err = urllib.error.HTTPError("u", 400, "bad", {}, io.BytesIO(
+        b'{"error":{"message":"Unknown name \\"thinkingLevel\\" at generation_config.thinking_config"}}'))
+    with mock.patch("urllib.request.urlopen", side_effect=[err, _ok("好")]) as op, \
+         mock.patch("time.sleep"):
+        assert llm([{"role": "user", "content": "hi"}]) == "好"
+    retry = json.loads(op.call_args_list[1][0][0].data)
+    assert "thinkingConfig" not in retry["generationConfig"]
+    assert "tools" in retry
+    assert llm._thinking_ok is False
