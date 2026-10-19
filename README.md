@@ -8,6 +8,7 @@
 
 | 版本 | 日期 | 內容 |
 |---|---|---|
+| v3 W7 | 2026-10-19 | 「查 …」開頭的訊息轉給我電腦上的本地模型（Ollama gemma4:e4b，經轉接站＋Cloudflare 通道），上網搜尋後附來源；bot 本體留在 Render 24 小時 |
 | v2 改善版 | 2026-10-11 | 改善輸入提示：快速回覆按鈕、非文字訊息提示、中文指令說明 |
 | v1 第一版 | 2026-10-05 | AI 對話、對話記憶、查維基百科與天氣；保留於 [`v1-first-version`](https://github.com/yh839103-cmd/yh839103/tree/v1-first-version) 分支 |
 
@@ -27,6 +28,7 @@
 - ✂️ 超過 LINE 5000 字上限時自動切段
 - ⏳ AI 思考時顯示「輸入中」動畫
 - 🔎 會自己查資料：中文維基百科（知識）、Open-Meteo（天氣），免費且不需金鑰
+- 🖥️ **「查 …」轉本地模型**（v3／W7）：開頭打「查 」，問題會轉到我電腦上的本地模型上網搜尋、附來源；電腦沒開時回「連不到」，其他功能照常
 - 🔁 Google 忙線時自動重試，並依序改用其他免費模型
 
 ## 專案結構
@@ -37,6 +39,7 @@ app/
   core.py   # 對話記憶、指令、訊息切段、提示文字與按鈕設定（純 Python，可單元測試）
   line_messages.py  # 把文字包成 LINE 訊息並加上快速回覆按鈕
   llm.py    # Gemini API 串接（只用內建 urllib），含重試與工具呼叫
+  relay.py  # 「查 …」轉給電腦上的本地模型轉接站（W7）
   tools.py  # AI 可呼叫的免費查詢工具：維基百科、天氣
 tests/      # 單元測試＋端對端 webhook 測試
 docs/       # 計畫書
@@ -95,6 +98,8 @@ docker run --env-file .env -p 8000:8000 line-ai-bot
 | `GEMINI_MODEL` | | 預設 `gemini-flash-latest`（自動使用最新 Flash 模型） |
 | `GEMINI_FALLBACK_MODEL` | | 主模型忙線時依序改用（逗號分隔），預設 `gemini-3.7-flash,gemini-3.5-flash-lite` |
 | `TAVILY_API_KEY` | | Tavily 搜尋 API 金鑰（每月 1,000 次免費），設定後 AI 才能上網查最新資訊 |
+| `SEARCH_RELAY_URL` | | W7：電腦上轉接站的通道網址（`https://….trycloudflare.com`），設定後「查 …」會交給本地模型 |
+| `SEARCH_RELAY_KEY` | | W7：轉接站的通關密碼（放在 Render，不寫進程式） |
 | `ENABLE_TOOLS` | | 設成 `false` 可關閉查資料功能，預設開啟 |
 | `SYSTEM_PROMPT` | | 自訂 AI 角色設定 |
 | `GEMINI_TEMPERATURE` | | 0～2，越低回答越穩定，預設 0.4 |

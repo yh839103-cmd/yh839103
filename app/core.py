@@ -10,6 +10,8 @@ import time
 from collections import deque
 from dataclasses import dataclass, field
 
+from app import relay
+
 LINE_TEXT_LIMIT = 5000      # LINE 單則文字訊息上限
 LINE_MAX_MESSAGES = 5       # 一次 reply 最多 5 則訊息
 
@@ -20,6 +22,8 @@ HELP_TEXT = (
     "・明天花蓮會下雨嗎？\n"
     "・幫我想今天晚餐吃什麼\n\n"
     "我會記得最近的對話，可以接著追問。\n"
+    "開頭打「查」加空格（例如「查 今天的新聞」），\n"
+    "會交給我電腦上的本地模型上網搜尋（電腦要開著）。\n"
     "不知道要問什麼？點下方的按鈕就能開始：\n"
     "📖 說明：再看一次這段說明\n"
     "🔄 重新開始：清除對話記憶，換新話題\n\n"
@@ -125,9 +129,11 @@ def split_message(text: str, limit: int = LINE_TEXT_LIMIT,
 class ChatService:
     """串接 AI 模型與對話記憶。llm 是一個可呼叫物件：llm(history) -> str"""
 
-    def __init__(self, llm, store: ConversationStore):
+    def __init__(self, llm, store: ConversationStore, search=None):
         self.llm = llm
         self.store = store
+        # 「查 …」交給電腦上的本地模型；search(question) -> str，測試時可換成假的
+        self.search = search or relay.ask
 
     def handle(self, user_id: str, text: str) -> list[str]:
         cmd = parse_command(text)
@@ -136,6 +142,10 @@ class ChatService:
         if cmd == "reset":
             self.store.reset(user_id)
             return [RESET_TEXT]
+
+        question = relay.match(text)
+        if question:  # 不問 Gemini、不進對話記憶，直接轉給本地模型
+            return split_message(self.search(question))
 
         self.store.append(user_id, "user", text)
         try:

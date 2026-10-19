@@ -19,3 +19,7 @@ services:
         value: gemini-3.7-flash,gemini-3.5-flash-lite
       - key: TAVILY_API_KEY
         sync: false
+      - key: SEARCH_RELAY_URL
+        sync: false
+      - key: SEARCH_RELAY_KEY
+        sync: false
